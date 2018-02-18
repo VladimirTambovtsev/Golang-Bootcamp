@@ -5,5 +5,10 @@
 </head>
 <body>
     <p> Hello there </p>
+    <ul>
+        {{ range $index, $element := . }}
+        <li>{{$index}} - {{$element}}</li>
+        {{end}}
+    </ul>
 </body>
 </html>
