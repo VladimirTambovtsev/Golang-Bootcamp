@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+</head>
+<body>
+
+    {{if .}}
+    <main>
+        <h2>Var names and form values: </h2>
+        {{range $key, $value := .}}
+            <p>{{$key}}</p>
+            <ul>
+                {{range $value}}
+                    <li>{{.}}</li>
+                {{end}}
+            </ul>
+        {{end}}
+    </main>
+    {{end}}
+
+    <form action="/?fname=Vlad" method="POST">
+        <input type="text" name="fname" placeholder="First Name" required/>
+        
+        <button type="submit" name="submit-btn" value="submit">Submit</button>
+    </form>
+</body>
+</html>
