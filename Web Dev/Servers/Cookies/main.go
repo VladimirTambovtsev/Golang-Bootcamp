@@ -36,7 +36,7 @@ func products(res http.ResponseWriter, req *http.Request) {
 		fmt.Fprintln(res, "Your cookie is written, check yo browser and refresh this page: dev tools / application / cookies")
 	} else {
 		tpl.ExecuteTemplate(res, "products.gohtml", nil)
-		fmt.Print(res, "\n\n Your cookie, Sir", c)
+		fmt.Print(res, "\n\n Your cookie, Sir: ", c)
 	}
 }
 
