@@ -3,6 +3,7 @@ package main
 import (
 	"html/template"
 	"net/http"
+	"time"
 
 	"github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -15,14 +16,21 @@ type user struct {
 	Last     string
 }
 
+type session struct {
+	un           string
+	lastActivity time.Time
+}
+
 var tpl *template.Template
-var dbUsers = map[string]user{}      // user ID, user
-var dbSessions = map[string]string{} // session ID, user ID
+var dbUsers = map[string]user{}       // user ID, user
+var dbSessions = map[string]session{} // session ID, session
+var dbSessionsCleaned time.Time
+
+const sessionLength int = 30
 
 func init() {
 	tpl = template.Must(template.ParseGlob("templates/*"))
-	bs, _ := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.MinCost)
-	dbUsers["test@test.com"] = user{"test@test.com", bs, "James", "Bond"}
+	dbSessionsCleaned = time.Now()
 }
 
 func main() {
@@ -37,12 +45,13 @@ func main() {
 
 func index(w http.ResponseWriter, req *http.Request) {
 	u := getUser(w, req)
+	showSessions() // for demonstration purposes
 	tpl.ExecuteTemplate(w, "index.gohtml", u)
 }
 
 func bar(w http.ResponseWriter, req *http.Request) {
 	u := getUser(w, req)
-	if !alreadyLoggedIn(req) {
+	if !alreadyLoggedIn(w, req) {
 		http.Redirect(w, req, "/", http.StatusSeeOther)
 		return
 	}
@@ -50,7 +59,7 @@ func bar(w http.ResponseWriter, req *http.Request) {
 }
 
 func signup(w http.ResponseWriter, req *http.Request) {
-	if alreadyLoggedIn(req) {
+	if alreadyLoggedIn(w, req) {
 		http.Redirect(w, req, "/", http.StatusSeeOther)
 		return
 	}
@@ -73,8 +82,9 @@ func signup(w http.ResponseWriter, req *http.Request) {
 			Name:  "session",
 			Value: sID.String(),
 		}
+		c.MaxAge = sessionLength
 		http.SetCookie(w, c)
-		dbSessions[c.Value] = un
+		dbSessions[c.Value] = session{un, time.Now()}
 		// store user in dbUsers
 		bs, err := bcrypt.GenerateFromPassword([]byte(p), bcrypt.MinCost)
 		if err != nil {
@@ -91,7 +101,7 @@ func signup(w http.ResponseWriter, req *http.Request) {
 }
 
 func login(w http.ResponseWriter, req *http.Request) {
-	if alreadyLoggedIn(req) {
+	if alreadyLoggedIn(w, req) {
 		http.Redirect(w, req, "/", http.StatusSeeOther)
 		return
 	}
@@ -112,14 +122,16 @@ func login(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, "Username and/or password do not match", http.StatusForbidden)
 			return
 		}
+
 		// create session
 		sID, _ := uuid.NewV4()
 		c := &http.Cookie{
 			Name:  "session",
 			Value: sID.String(),
 		}
+		c.MaxAge = sessionLength
 		http.SetCookie(w, c)
-		dbSessions[c.Value] = un
+		dbSessions[c.Value] = session{un, time.Now()}
 		http.Redirect(w, req, "/", http.StatusSeeOther)
 		return
 	}
@@ -128,7 +140,7 @@ func login(w http.ResponseWriter, req *http.Request) {
 }
 
 func logout(w http.ResponseWriter, req *http.Request) {
-	if !alreadyLoggedIn(req) {
+	if !alreadyLoggedIn(w, req) {
 		http.Redirect(w, req, "/", http.StatusSeeOther)
 		return
 	}
@@ -143,5 +155,11 @@ func logout(w http.ResponseWriter, req *http.Request) {
 	}
 	http.SetCookie(w, c)
 
+	// clean up dbSessions
+	if time.Now().Sub(dbSessionsCleaned) > (time.Second * 30) {
+		go cleanSessions()
+	}
+
 	http.Redirect(w, req, "/login", http.StatusSeeOther)
+
 }
