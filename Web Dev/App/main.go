@@ -7,7 +7,6 @@ import (
 )
 
 func main() {
-	// http.ListenAndServe(":8080", http.FileServer(http.Dir("public")))
 	templates := populateTemplates()
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		requestedFile := r.URL.Path[1:]
@@ -21,14 +20,15 @@ func main() {
 			w.WriteHeader(http.StatusNotFound)
 		}
 	})
-	http.Handle("/img/", http.FileServer(http.Dir("../public")))
-	http.Handle("/css/", http.FileServer(http.Dir("../public")))
+	http.Handle("/js/", http.FileServer(http.Dir("public")))
+	http.Handle("/css/", http.FileServer(http.Dir("public")))
 	http.ListenAndServe(":8080", nil)
+
 }
 
 func populateTemplates() *template.Template {
 	result := template.New("templates")
 	const basePath = "templates"
-	template.Must(result.ParseGlob(basePath + "/*html"))
+	template.Must(result.ParseGlob(basePath + "/*.html"))
 	return result
 }
