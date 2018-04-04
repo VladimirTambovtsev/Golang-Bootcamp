@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 )
 
@@ -9,6 +11,11 @@ var tpl *template.Template
 
 func init() {
 	tpl = template.Must(template.ParseGlob("templates/*"))
+}
+
+type user struct { // should be removed to /model
+	Email    string
+	Password []byte
 }
 
 func main() {
@@ -38,5 +45,20 @@ func signup(res http.ResponseWriter, req *http.Request) {
 }
 
 func signin(res http.ResponseWriter, req *http.Request) {
+
+	if req.Method == http.MethodPost {
+		err := req.ParseForm()
+		if err != nil {
+			log.Println("Alarm! Error logging in")
+		}
+		email := req.Form.Get("email")
+		password := req.Form.Get("password")
+		if email == "test@gmail.com" && password == "password" {
+			http.Redirect(res, req, "/contacts", http.StatusTemporaryRedirect)
+			return
+		} else {
+			fmt.Println("email is not eq test@gmail.com or password isnt eq to `password`")
+		}
+	}
 	tpl.ExecuteTemplate(res, "signin.html", nil)
 }
