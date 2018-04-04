@@ -20,6 +20,7 @@ func main() {
 			w.WriteHeader(http.StatusNotFound)
 		}
 	})
+
 	http.Handle("/js/", http.FileServer(http.Dir("public")))
 	http.Handle("/css/", http.FileServer(http.Dir("public")))
 	http.ListenAndServe(":8080", nil)
