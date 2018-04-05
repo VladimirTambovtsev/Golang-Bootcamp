@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"db/model"
 	"fmt"
 	"html/template"
 	"log"
@@ -11,7 +10,8 @@ import (
 	_ "github.com/lib/pq"
 )
 
-var tpl *template.Template
+var tpl *template.Template // postgres
+var db *sql.DB             // db
 
 func init() {
 	tpl = template.Must(template.ParseGlob("templates/*"))
@@ -22,12 +22,16 @@ type user struct { // should be removed to /model
 	Password []byte
 }
 
+func SetDatabase(database *sql.DB) {
+	db = database
+}
+
 func connectDb() *sql.DB {
 	db, err := sql.Open("postgres", "postgres://vladimir:351444@localhost/consumer_complaints?sslmode=disable")
 	if err != nil {
 		log.Fatalln(fmt.Errorf("Unable to connect to DB: %v", err))
 	}
-	model.SetDatabase(db)
+	SetDatabase(db)
 	return db
 }
 
