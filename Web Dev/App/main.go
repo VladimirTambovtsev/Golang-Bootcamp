@@ -1,10 +1,14 @@
 package main
 
 import (
+	"database/sql"
+	"db/model"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
+
+	_ "github.com/lib/pq"
 )
 
 var tpl *template.Template
@@ -18,8 +22,18 @@ type user struct { // should be removed to /model
 	Password []byte
 }
 
-func main() {
+func connectDb() *sql.DB {
+	db, err := sql.Open("postgres", "postgres://vladimir:351444@localhost/consumer_complaints?sslmode=disable")
+	if err != nil {
+		log.Fatalln(fmt.Errorf("Unable to connect to DB: %v", err))
+	}
+	model.SetDatabase(db)
+	return db
+}
 
+func main() {
+	db := connectDb()
+	defer db.Close()
 	http.HandleFunc("/", index)
 	http.HandleFunc("/contacts", contacts)
 	http.HandleFunc("/signup", signup)
@@ -60,5 +74,6 @@ func signin(res http.ResponseWriter, req *http.Request) {
 			fmt.Println("email is not eq test@gmail.com or password isnt eq to `password`")
 		}
 	}
+	res.Header().Add("Content-Type", "text/html") // doesn't important
 	tpl.ExecuteTemplate(res, "signin.html", nil)
 }
